@@ -1,8 +1,11 @@
 package edu.arsw.proyecto.SchedulingService.domain.model;
 
+import lombok.Getter;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+@Getter
 public class TimeSlot {
     private final LocalDate date;
     private final LocalTime startTime;

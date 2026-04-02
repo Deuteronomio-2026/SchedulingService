@@ -1,16 +1,19 @@
 package edu.arsw.proyecto.SchedulingService.domain.model;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
 public class Session {
-    private UUID id;
-    private UUID patientId;
-    private UUID psychologistId;
-    private TimeSlot timeSlot;
-    private SessionType type;
+    private final UUID id;
+    private final UUID patientId;
+    private final UUID psychologistId;
+    private final TimeSlot timeSlot;
+    private final SessionType type;
     private SessionStatus status;
-    private LocalDateTime createdAt;
+    private final LocalDateTime createdAt;
 
     public Session(UUID patientId, UUID psychologistId,
                    TimeSlot timeSlot, SessionType type) {
@@ -21,6 +24,24 @@ public class Session {
         this.type = type;
         this.status = SessionStatus.PENDING;
         this.createdAt = LocalDateTime.now();
+    }
+
+    private Session(UUID id, UUID patientId, UUID psychologistId,
+                    TimeSlot timeSlot, SessionType type, SessionStatus status,
+                    LocalDateTime createdAt) {
+        this.id = id;
+        this.patientId = patientId;
+        this.psychologistId = psychologistId;
+        this.timeSlot = timeSlot;
+        this.type = type;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
+    public static Session reconstituteFromPersistence(UUID id, UUID patientId, UUID psychologistId,
+                                                       TimeSlot timeSlot, SessionType type,
+                                                       SessionStatus status, LocalDateTime createdAt) {
+        return new Session(id, patientId, psychologistId, timeSlot, type, status, createdAt);
     }
 
     public void confirm() {

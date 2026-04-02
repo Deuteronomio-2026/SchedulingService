@@ -1,5 +1,6 @@
-package edu.arsw.proyecto.SchedulingService.domain.service;
+package edu.arsw.proyecto.SchedulingService.infrastructure.lock;
 
+import edu.arsw.proyecto.SchedulingService.application.port.out.DomainLockPort;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -8,17 +9,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Component
-public class LockManager {
+public class InMemoryLockAdapter implements DomainLockPort {
 
-    private static LockManager instance;
-    private final ConcurrentHashMap<UUID, ReentrantLock> locks
-            = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, ReentrantLock> locks = new ConcurrentHashMap<>();
 
-    public static synchronized LockManager getInstance() {
-        if (instance == null) instance = new LockManager();
-        return instance;
-    }
-
+    @Override
     public boolean acquireLock(UUID psychologistId) {
         ReentrantLock lock = locks.computeIfAbsent(
                 psychologistId, id -> new ReentrantLock()
@@ -31,6 +26,7 @@ public class LockManager {
         }
     }
 
+    @Override
     public void releaseLock(UUID psychologistId) {
         ReentrantLock lock = locks.get(psychologistId);
         if (lock != null && lock.isHeldByCurrentThread()) {
