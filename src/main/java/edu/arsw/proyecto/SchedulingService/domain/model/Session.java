@@ -1,16 +1,19 @@
 package edu.arsw.proyecto.SchedulingService.domain.model;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Getter
 public class Session {
-    private UUID id;
-    private UUID patientId;
-    private UUID psychologistId;
-    private TimeSlot timeSlot;
-    private SessionType type;
+    private final UUID id;
+    private final UUID patientId;
+    private final UUID psychologistId;
+    private final TimeSlot timeSlot;
+    private final SessionType type;
     private SessionStatus status;
-    private LocalDateTime createdAt;
+    private final LocalDateTime createdAt;
 
     public Session(UUID patientId, UUID psychologistId,
                    TimeSlot timeSlot, SessionType type) {
