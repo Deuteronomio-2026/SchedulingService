@@ -26,6 +26,24 @@ public class Session {
         this.createdAt = LocalDateTime.now();
     }
 
+    private Session(UUID id, UUID patientId, UUID psychologistId,
+                    TimeSlot timeSlot, SessionType type, SessionStatus status,
+                    LocalDateTime createdAt) {
+        this.id = id;
+        this.patientId = patientId;
+        this.psychologistId = psychologistId;
+        this.timeSlot = timeSlot;
+        this.type = type;
+        this.status = status;
+        this.createdAt = createdAt;
+    }
+
+    public static Session reconstituteFromPersistence(UUID id, UUID patientId, UUID psychologistId,
+                                                       TimeSlot timeSlot, SessionType type,
+                                                       SessionStatus status, LocalDateTime createdAt) {
+        return new Session(id, patientId, psychologistId, timeSlot, type, status, createdAt);
+    }
+
     public void confirm() {
         this.status = SessionStatus.CONFIRMED;
     }
