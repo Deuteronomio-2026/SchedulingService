@@ -5,6 +5,7 @@ import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -35,6 +36,13 @@ public class JpaSessionRepositoryAdapter implements SessionRepositoryPort {
         return jpa.existsByPsychologistIdAndDateAndStartTime(
                 psychologistId, slot.getDate(), slot.getStartTime()
         );
+    }
+
+    @Override
+    public List<Session> findAll() {
+        return jpa.findAll().stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private SessionJpaEntity toEntity(Session s) {
