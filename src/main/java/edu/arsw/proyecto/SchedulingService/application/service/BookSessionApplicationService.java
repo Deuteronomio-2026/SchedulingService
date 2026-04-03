@@ -12,6 +12,7 @@ import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
 import edu.arsw.proyecto.SchedulingService.domain.service.SchedulingDomainService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -72,5 +73,10 @@ public class BookSessionApplicationService implements BookSessionUseCase {
         sessionRepository.save(session);
         slotLock.unlockSlot(session.getPsychologistId(), session.getTimeSlot());
         eventPublisher.publishSessionCancelled(session);
+    }
+
+    @Override
+    public List<Session> findAll() {
+        return sessionRepository.findAll();
     }
 }
