@@ -158,4 +158,57 @@ class SessionTest {
         assertEquals(originalPatientId, session.getPatientId());
         assertEquals(originalPsychologistId, session.getPsychologistId());
     }
+
+        @Test
+        @DisplayName("Should reschedule confirmed session and update timeslot")
+        void shouldRescheduleConfirmedSessionAndUpdateTimeslot() {
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        TimeSlot originalTimeSlot = new TimeSlot(
+            LocalDate.of(2026, 4, 15),
+            LocalTime.of(14, 0),
+            LocalTime.of(15, 0)
+        );
+        TimeSlot newTimeSlot = new TimeSlot(
+            LocalDate.of(2026, 4, 16),
+            LocalTime.of(9, 0),
+            LocalTime.of(10, 0)
+        );
+
+        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL);
+        session.confirm();
+
+        session.reschedule(newTimeSlot);
+
+        assertEquals(newTimeSlot, session.getTimeSlot());
+        assertEquals(SessionStatus.CONFIRMED, session.getStatus());
+        }
+
+        @Test
+        @DisplayName("Should throw when trying to reschedule cancelled session")
+        void shouldThrowWhenTryingToRescheduleCancelledSession() {
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        TimeSlot originalTimeSlot = new TimeSlot(
+            LocalDate.of(2026, 4, 15),
+            LocalTime.of(14, 0),
+            LocalTime.of(15, 0)
+        );
+        TimeSlot newTimeSlot = new TimeSlot(
+            LocalDate.of(2026, 4, 16),
+            LocalTime.of(9, 0),
+            LocalTime.of(10, 0)
+        );
+
+        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL);
+        session.confirm();
+        session.cancel();
+
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> session.reschedule(newTimeSlot)
+        );
+
+        assertEquals("No se puede reprogramar una sesión cancelada o completada", exception.getMessage());
+        }
 }
