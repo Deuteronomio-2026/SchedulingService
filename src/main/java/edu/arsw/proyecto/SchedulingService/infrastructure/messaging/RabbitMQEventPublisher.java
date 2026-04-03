@@ -2,6 +2,7 @@ package edu.arsw.proyecto.SchedulingService.infrastructure.messaging;
 
 import edu.arsw.proyecto.SchedulingService.application.port.out.EventPublisherPort;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
+import edu.arsw.proyecto.SchedulingService.infrastructure.config.RabbitMQConfig;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class RabbitMQEventPublisher implements EventPublisherPort {
 
     private final RabbitTemplate rabbitTemplate;
-    private static final String EXCHANGE = "scheduling.exchange";
+    private static final String EXCHANGE = RabbitMQConfig.SCHEDULING_EXCHANGE;
 
     public RabbitMQEventPublisher(RabbitTemplate rabbitTemplate) {
         this.rabbitTemplate = rabbitTemplate;
@@ -19,6 +20,13 @@ public class RabbitMQEventPublisher implements EventPublisherPort {
     public void publishSessionBooked(Session session) {
         rabbitTemplate.convertAndSend(
                 EXCHANGE, "session.booked", session
+        );
+    }
+
+    @Override
+    public void publishSessionRescheduled(Session session) {
+        rabbitTemplate.convertAndSend(
+                EXCHANGE, "session.rescheduled", session
         );
     }
 

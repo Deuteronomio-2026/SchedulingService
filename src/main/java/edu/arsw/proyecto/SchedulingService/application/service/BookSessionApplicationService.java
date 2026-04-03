@@ -1,6 +1,7 @@
 package edu.arsw.proyecto.SchedulingService.application.service;
 
 import edu.arsw.proyecto.SchedulingService.application.dto.BookSessionDTO;
+import edu.arsw.proyecto.SchedulingService.application.dto.RescheduleSessionDTO;
 import edu.arsw.proyecto.SchedulingService.application.port.in.BookSessionUseCase;
 import edu.arsw.proyecto.SchedulingService.application.port.out.EventPublisherPort;
 import edu.arsw.proyecto.SchedulingService.application.port.out.SessionRepositoryPort;
@@ -61,6 +62,39 @@ public class BookSessionApplicationService implements BookSessionUseCase {
 
         eventPublisher.publishSessionBooked(saved);
 
+        return saved;
+    }
+
+    @Override
+    public Session reschedule(UUID sessionId, RescheduleSessionDTO cmd) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new SessionNotFoundException("Sesión no encontrada"));
+
+        TimeSlot oldSlot = session.getTimeSlot();
+        TimeSlot newSlot = new TimeSlot(cmd.date(), cmd.startTime(), cmd.endTime());
+
+        boolean sameSlot = oldSlot.getDate().equals(newSlot.getDate())
+                && oldSlot.getStartTime().equals(newSlot.getStartTime())
+                && oldSlot.getEndTime().equals(newSlot.getEndTime());
+
+        if (sameSlot) {
+            throw new IllegalArgumentException("La nueva franja horaria debe ser diferente a la actual");
+        }
+
+        if (slotLock.isLocked(session.getPsychologistId(), newSlot)) {
+            throw new SlotNotAvailableException("Horario no disponible");
+        }
+
+        if (sessionRepository.existsByPsychologistAndSlot(session.getPsychologistId(), newSlot)) {
+            throw new SlotNotAvailableException("Horario ya reservado");
+        }
+
+        slotLock.lockSlot(session.getPsychologistId(), newSlot);
+        slotLock.unlockSlot(session.getPsychologistId(), oldSlot);
+
+        session.reschedule(newSlot);
+        Session saved = sessionRepository.save(session);
+        eventPublisher.publishSessionRescheduled(saved);
         return saved;
     }
 

@@ -1,6 +1,7 @@
 package edu.arsw.proyecto.SchedulingService.infrastructure.controller;
 
 import edu.arsw.proyecto.SchedulingService.application.dto.BookSessionDTO;
+import edu.arsw.proyecto.SchedulingService.application.dto.RescheduleSessionDTO;
 import edu.arsw.proyecto.SchedulingService.application.port.in.BookSessionUseCase;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.SessionResponse;
@@ -48,8 +49,8 @@ public class SchedulingController {
                                               "patientId": "550e8400-e29b-41d4-a716-446655440001",
                                               "psychologistId": "550e8400-e29b-41d4-a716-446655440002",
                                               "date": "2026-04-15",
-                                              "startTime": "14:00:00",
-                                              "endTime": "15:00:00",
+                                              "startTime": "14:00",
+                                              "endTime": "15:00",
                                               "type": "VIRTUAL",
                                               "status": "CONFIRMED",
                                               "createdAt": "2026-04-03T16:18:00"
@@ -83,8 +84,8 @@ public class SchedulingController {
                                               "patientId": "550e8400-e29b-41d4-a716-446655440001",
                                               "psychologistId": "550e8400-e29b-41d4-a716-446655440002",
                                               "date": "2026-04-15",
-                                              "startTime": "14:00:00",
-                                              "endTime": "15:00:00",
+                                                                                                                                                                                        "startTime": "14:00",
+                                                                                                                                                                                        "endTime": "15:00",
                                               "type": "VIRTUAL"
                                             }
                                             """
@@ -127,6 +128,53 @@ public class SchedulingController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/reschedule")
+    @Operation(
+            summary = "Reprogramar sesión",
+            description = "Permite cambiar la fecha y hora de una sesión existente, validando disponibilidad del psicólogo"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Sesión reprogramada exitosamente",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SessionResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Nueva franja inválida o no disponible"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Sesión no encontrada"
+            )
+    })
+    public ResponseEntity<SessionResponse> reschedule(
+            @Parameter(description = "ID de la sesión a reprogramar", required = true)
+            @PathVariable UUID id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Nueva fecha y franja de tiempo en formato HH:mm",
+                    required = true,
+                    content = @Content(
+                            schema = @Schema(implementation = RescheduleSessionDTO.class),
+                            examples = @ExampleObject(
+                                    value = """
+                                            {
+                                              "date": "2026-04-16",
+                                              "startTime": "09:00",
+                                              "endTime": "10:00"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @RequestBody RescheduleSessionDTO command) {
+        Session session = bookSessionUseCase.reschedule(id, command);
+        return ResponseEntity.ok(SessionResponse.from(session));
+    }
+
     @GetMapping
     @Operation(
             summary = "Listar todas las sesiones",
@@ -147,8 +195,8 @@ public class SchedulingController {
                                                 "patientId": "550e8400-e29b-41d4-a716-446655440001",
                                                 "psychologistId": "550e8400-e29b-41d4-a716-446655440002",
                                                 "date": "2026-04-15",
-                                                "startTime": "14:00:00",
-                                                "endTime": "15:00:00",
+                                                "startTime": "14:00",
+                                                "endTime": "15:00",
                                                 "type": "VIRTUAL",
                                                 "status": "CONFIRMED",
                                                 "createdAt": "2026-04-03T16:18:00"

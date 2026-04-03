@@ -10,7 +10,7 @@ public class Session {
     private final UUID id;
     private final UUID patientId;
     private final UUID psychologistId;
-    private final TimeSlot timeSlot;
+    private TimeSlot timeSlot;
     private final SessionType type;
     private SessionStatus status;
     private final LocalDateTime createdAt;
@@ -54,6 +54,13 @@ public class Session {
 
     public void complete() {
         this.status = SessionStatus.COMPLETED;
+    }
+
+    public void reschedule(TimeSlot newTimeSlot) {
+        if (this.status == SessionStatus.CANCELLED || this.status == SessionStatus.COMPLETED) {
+            throw new IllegalStateException("No se puede reprogramar una sesión cancelada o completada");
+        }
+        this.timeSlot = newTimeSlot;
     }
 
 }

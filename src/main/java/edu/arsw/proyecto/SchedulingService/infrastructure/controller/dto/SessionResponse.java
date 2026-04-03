@@ -1,5 +1,6 @@
 package edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionStatus;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
@@ -16,7 +17,9 @@ public class SessionResponse {
     private final UUID patientId;
     private final UUID psychologistId;
     private final LocalDate date;
+    @JsonFormat(pattern = "HH:mm")
     private final LocalTime startTime;
+    @JsonFormat(pattern = "HH:mm")
     private final LocalTime endTime;
     private final SessionType type;
     private final SessionStatus status;
