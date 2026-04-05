@@ -2,6 +2,7 @@ package edu.arsw.proyecto.SchedulingService.domain.service;
 
 import edu.arsw.proyecto.SchedulingService.application.port.out.DomainLockPort;
 import edu.arsw.proyecto.SchedulingService.domain.exception.SlotNotAvailableException;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionAttentionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
@@ -17,7 +18,7 @@ public class SchedulingDomainService {
     }
 
     public Session createSession(UUID patientId, UUID psychologistId,
-                                 TimeSlot slot, SessionType type) {
+                                 TimeSlot slot, SessionType type, SessionAttentionType attentionType) {
         boolean acquired = lockPort.acquireLock(psychologistId);
         if (!acquired) {
             throw new SlotNotAvailableException(
@@ -25,7 +26,7 @@ public class SchedulingDomainService {
             );
         }
         try {
-            return new Session(patientId, psychologistId, slot, type);
+            return new Session(patientId, psychologistId, slot, type, attentionType);
         } finally {
             lockPort.releaseLock(psychologistId);
         }

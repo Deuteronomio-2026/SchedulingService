@@ -12,36 +12,39 @@ public class Session {
     private final UUID psychologistId;
     private TimeSlot timeSlot;
     private final SessionType type;
+    private final SessionAttentionType attentionType;
     private SessionStatus status;
     private final LocalDateTime createdAt;
 
     public Session(UUID patientId, UUID psychologistId,
-                   TimeSlot timeSlot, SessionType type) {
+                   TimeSlot timeSlot, SessionType type, SessionAttentionType attentionType) {
         this.id = UUID.randomUUID();
         this.patientId = patientId;
         this.psychologistId = psychologistId;
         this.timeSlot = timeSlot;
         this.type = type;
+        this.attentionType = attentionType;
         this.status = SessionStatus.PENDING;
         this.createdAt = LocalDateTime.now();
     }
 
     private Session(UUID id, UUID patientId, UUID psychologistId,
-                    TimeSlot timeSlot, SessionType type, SessionStatus status,
+                    TimeSlot timeSlot, SessionType type, SessionAttentionType attentionType, SessionStatus status,
                     LocalDateTime createdAt) {
         this.id = id;
         this.patientId = patientId;
         this.psychologistId = psychologistId;
         this.timeSlot = timeSlot;
         this.type = type;
+        this.attentionType = attentionType;
         this.status = status;
         this.createdAt = createdAt;
     }
 
     public static Session reconstituteFromPersistence(UUID id, UUID patientId, UUID psychologistId,
-                                                       TimeSlot timeSlot, SessionType type,
+                                                       TimeSlot timeSlot, SessionType type, SessionAttentionType attentionType,
                                                        SessionStatus status, LocalDateTime createdAt) {
-        return new Session(id, patientId, psychologistId, timeSlot, type, status, createdAt);
+        return new Session(id, patientId, psychologistId, timeSlot, type, attentionType, status, createdAt);
     }
 
     public void confirm() {

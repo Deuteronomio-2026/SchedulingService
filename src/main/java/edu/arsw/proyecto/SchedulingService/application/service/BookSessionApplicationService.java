@@ -51,7 +51,7 @@ public class BookSessionApplicationService implements BookSessionUseCase {
         }
 
         Session session = domainService.createSession(
-                cmd.patientId(), cmd.psychologistId(), slot, cmd.type()
+            cmd.patientId(), cmd.psychologistId(), slot, cmd.type(), cmd.attentionType()
         );
 
         session.confirm();

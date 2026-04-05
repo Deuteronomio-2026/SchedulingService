@@ -1,6 +1,7 @@
 package edu.arsw.proyecto.SchedulingService.application.dto;
 
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionAttentionType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ public record BookSessionDTO(
         LocalTime startTime,
         @JsonFormat(pattern = "HH:mm")
         LocalTime endTime,
-        SessionType type
+        SessionType type,
+        SessionAttentionType attentionType
 ) {
 }

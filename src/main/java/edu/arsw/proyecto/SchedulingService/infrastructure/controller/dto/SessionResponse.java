@@ -2,6 +2,7 @@ package edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionAttentionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionStatus;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
 import lombok.Getter;
@@ -22,12 +23,14 @@ public class SessionResponse {
     @JsonFormat(pattern = "HH:mm")
     private final LocalTime endTime;
     private final SessionType type;
+    private final SessionAttentionType attentionType;
     private final SessionStatus status;
     private final LocalDateTime createdAt;
 
     private SessionResponse(UUID id, UUID patientId, UUID psychologistId,
                            LocalDate date, LocalTime startTime, LocalTime endTime,
-                           SessionType type, SessionStatus status, LocalDateTime createdAt) {
+                           SessionType type, SessionAttentionType attentionType,
+                           SessionStatus status, LocalDateTime createdAt) {
         this.id = id;
         this.patientId = patientId;
         this.psychologistId = psychologistId;
@@ -35,6 +38,7 @@ public class SessionResponse {
         this.startTime = startTime;
         this.endTime = endTime;
         this.type = type;
+        this.attentionType = attentionType;
         this.status = status;
         this.createdAt = createdAt;
     }
@@ -48,6 +52,7 @@ public class SessionResponse {
                 session.getTimeSlot().getStartTime(),
                 session.getTimeSlot().getEndTime(),
                 session.getType(),
+                session.getAttentionType(),
                 session.getStatus(),
                 session.getCreatedAt()
         );

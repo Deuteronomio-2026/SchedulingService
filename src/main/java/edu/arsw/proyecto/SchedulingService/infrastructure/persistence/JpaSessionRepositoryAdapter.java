@@ -54,6 +54,7 @@ public class JpaSessionRepositoryAdapter implements SessionRepositoryPort {
         e.setStartTime(s.getTimeSlot().getStartTime());
         e.setEndTime(s.getTimeSlot().getEndTime());
         e.setType(s.getType());
+        e.setAttentionType(s.getAttentionType());
         e.setStatus(s.getStatus());
         e.setCreatedAt(s.getCreatedAt());
         return e;
@@ -69,6 +70,7 @@ public class JpaSessionRepositoryAdapter implements SessionRepositoryPort {
                 e.getPsychologistId(),
                 slot,
                 e.getType(),
+                e.getAttentionType(),
                 e.getStatus(),
                 e.getCreatedAt()
         );

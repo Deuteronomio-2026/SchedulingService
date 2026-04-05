@@ -1,6 +1,7 @@
 package edu.arsw.proyecto.SchedulingService.infrastructure.persistence;
 
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionStatus;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionAttentionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -28,6 +29,9 @@ public class SessionJpaEntity {
 
     @Enumerated(EnumType.STRING)
     private SessionType type;
+
+    @Enumerated(EnumType.STRING)
+    private SessionAttentionType attentionType;
 
     @Enumerated(EnumType.STRING)
     private SessionStatus status;
