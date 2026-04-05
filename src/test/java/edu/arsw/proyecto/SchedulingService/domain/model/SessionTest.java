@@ -23,13 +23,14 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
         assertNotNull(session.getId());
         assertEquals(patientId, session.getPatientId());
         assertEquals(psychologistId, session.getPsychologistId());
         assertEquals(timeSlot, session.getTimeSlot());
         assertEquals(SessionType.VIRTUAL, session.getType());
+        assertEquals(SessionAttentionType.PRIMERA_VEZ, session.getAttentionType());
         assertEquals(SessionStatus.PENDING, session.getStatus());
         assertNotNull(session.getCreatedAt());
     }
@@ -45,7 +46,7 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
         assertEquals(SessionStatus.PENDING, session.getStatus());
 
         session.confirm();
@@ -64,7 +65,7 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
         session.confirm();
 
         session.cancel();
@@ -83,7 +84,7 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
         session.confirm();
 
         session.complete();
@@ -106,7 +107,7 @@ class SessionTest {
 
         Session session = Session.reconstituteFromPersistence(
                 id, patientId, psychologistId, timeSlot,
-                SessionType.PRESENTIAL, SessionStatus.CONFIRMED, createdAt
+            SessionType.PRESENTIAL, SessionAttentionType.SEGUIMIENTO, SessionStatus.CONFIRMED, createdAt
         );
 
         assertEquals(id, session.getId());
@@ -114,6 +115,7 @@ class SessionTest {
         assertEquals(psychologistId, session.getPsychologistId());
         assertEquals(timeSlot, session.getTimeSlot());
         assertEquals(SessionType.PRESENTIAL, session.getType());
+        assertEquals(SessionAttentionType.SEGUIMIENTO, session.getAttentionType());
         assertEquals(SessionStatus.CONFIRMED, session.getStatus());
         assertEquals(createdAt, session.getCreatedAt());
     }
@@ -129,9 +131,10 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.PRESENTIAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.PRESENTIAL, SessionAttentionType.SEGUIMIENTO);
 
         assertEquals(SessionType.PRESENTIAL, session.getType());
+        assertEquals(SessionAttentionType.SEGUIMIENTO, session.getAttentionType());
     }
 
     @Test
@@ -145,7 +148,7 @@ class SessionTest {
                 LocalTime.of(15, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
         UUID originalId = session.getId();
         UUID originalPatientId = session.getPatientId();
@@ -175,7 +178,7 @@ class SessionTest {
             LocalTime.of(10, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
         session.confirm();
 
         session.reschedule(newTimeSlot);
@@ -200,7 +203,7 @@ class SessionTest {
             LocalTime.of(10, 0)
         );
 
-        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL);
+        Session session = new Session(patientId, psychologistId, originalTimeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
         session.confirm();
         session.cancel();
 

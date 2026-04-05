@@ -2,6 +2,7 @@ package edu.arsw.proyecto.SchedulingService.domain.service;
 
 import edu.arsw.proyecto.SchedulingService.application.port.out.DomainLockPort;
 import edu.arsw.proyecto.SchedulingService.domain.exception.SlotNotAvailableException;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionAttentionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
@@ -47,7 +48,7 @@ class SchedulingDomainServiceTest {
         when(lockPort.acquireLock(psychologistId)).thenReturn(true);
 
         Session session = domainService.createSession(
-                patientId, psychologistId, timeSlot, SessionType.VIRTUAL
+                patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
         );
 
         assertNotNull(session);
@@ -55,6 +56,7 @@ class SchedulingDomainServiceTest {
         assertEquals(psychologistId, session.getPsychologistId());
         assertEquals(timeSlot, session.getTimeSlot());
         assertEquals(SessionType.VIRTUAL, session.getType());
+        assertEquals(SessionAttentionType.PRIMERA_VEZ, session.getAttentionType());
 
         verify(lockPort).acquireLock(psychologistId);
         verify(lockPort).releaseLock(psychologistId);
@@ -74,7 +76,7 @@ class SchedulingDomainServiceTest {
         when(lockPort.acquireLock(psychologistId)).thenReturn(false);
 
         assertThrows(SlotNotAvailableException.class, () ->
-                domainService.createSession(patientId, psychologistId, timeSlot, SessionType.VIRTUAL)
+                domainService.createSession(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ)
         );
 
         verify(lockPort).acquireLock(psychologistId);
@@ -95,7 +97,7 @@ class SchedulingDomainServiceTest {
         when(lockPort.acquireLock(psychologistId)).thenReturn(true);
 
         Session session = domainService.createSession(
-                patientId, psychologistId, timeSlot, SessionType.VIRTUAL
+                patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
         );
 
         assertNotNull(session);
@@ -116,10 +118,11 @@ class SchedulingDomainServiceTest {
         when(lockPort.acquireLock(psychologistId)).thenReturn(true);
 
         Session session = domainService.createSession(
-                patientId, psychologistId, timeSlot, SessionType.PRESENTIAL
+                patientId, psychologistId, timeSlot, SessionType.PRESENTIAL, SessionAttentionType.SEGUIMIENTO
         );
 
         assertEquals(SessionType.PRESENTIAL, session.getType());
+        assertEquals(SessionAttentionType.SEGUIMIENTO, session.getAttentionType());
         verify(lockPort).releaseLock(psychologistId);
     }
 
@@ -139,10 +142,10 @@ class SchedulingDomainServiceTest {
         when(lockPort.acquireLock(psychologist2)).thenReturn(true);
 
         Session session1 = domainService.createSession(
-                patientId, psychologist1, timeSlot, SessionType.VIRTUAL
+                patientId, psychologist1, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
         );
         Session session2 = domainService.createSession(
-                patientId, psychologist2, timeSlot, SessionType.VIRTUAL
+                patientId, psychologist2, timeSlot, SessionType.VIRTUAL, SessionAttentionType.SEGUIMIENTO
         );
 
         assertNotNull(session1);

@@ -52,6 +52,7 @@ public class SchedulingController {
                                               "startTime": "14:00",
                                               "endTime": "15:00",
                                               "type": "VIRTUAL",
+                                                                                                                                                                                        "attentionType": "PRIMERA_VEZ",
                                               "status": "CONFIRMED",
                                               "createdAt": "2026-04-03T16:18:00"
                                             }
@@ -86,7 +87,8 @@ public class SchedulingController {
                                               "date": "2026-04-15",
                                                                                                                                                                                         "startTime": "14:00",
                                                                                                                                                                                         "endTime": "15:00",
-                                              "type": "VIRTUAL"
+                                                                                                                                                                                        "type": "VIRTUAL",
+                                                                                                                                                                                        "attentionType": "PRIMERA_VEZ"
                                             }
                                             """
                             )
@@ -198,6 +200,7 @@ public class SchedulingController {
                                                 "startTime": "14:00",
                                                 "endTime": "15:00",
                                                 "type": "VIRTUAL",
+                                                                                                                                                                                                "attentionType": "PRIMERA_VEZ",
                                                 "status": "CONFIRMED",
                                                 "createdAt": "2026-04-03T16:18:00"
                                               }
