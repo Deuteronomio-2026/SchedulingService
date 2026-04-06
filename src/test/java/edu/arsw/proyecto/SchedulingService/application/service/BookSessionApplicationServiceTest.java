@@ -244,6 +244,43 @@ class BookSessionApplicationServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw SessionNotFoundException when session is already cancelled")
+    void shouldThrowSessionNotFoundExceptionWhenSessionIsAlreadyCancelled() {
+        UUID sessionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+
+        TimeSlot timeSlot = new TimeSlot(
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0)
+        );
+
+        Session cancelledSession = Session.reconstituteFromPersistence(
+                sessionId,
+                patientId,
+                psychologistId,
+                timeSlot,
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ,
+                SessionStatus.CANCELLED,
+                LocalDateTime.now()
+        );
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(cancelledSession));
+
+        SessionNotFoundException exception = assertThrows(
+                SessionNotFoundException.class,
+                () -> applicationService.cancel(sessionId)
+        );
+
+        assertEquals("No hay una sesión activa con el ID indicado", exception.getMessage());
+        verify(sessionRepository, never()).save(any());
+        verify(slotLock, never()).unlockSlot(any(), any());
+        verify(eventPublisher, never()).publishSessionCancelled(any());
+    }
+
+    @Test
     @DisplayName("Should publish event after successful booking")
     void shouldPublishEventAfterSuccessfulBooking() {
         UUID patientId = UUID.randomUUID();

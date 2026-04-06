@@ -4,6 +4,7 @@ import edu.arsw.proyecto.SchedulingService.application.dto.BookSessionDTO;
 import edu.arsw.proyecto.SchedulingService.application.dto.RescheduleSessionDTO;
 import edu.arsw.proyecto.SchedulingService.application.port.in.BookSessionUseCase;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
+import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.CancelSessionResponse;
 import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.SessionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -107,27 +108,36 @@ public class SchedulingController {
     )
     @ApiResponses(value = {
             @ApiResponse(
-                    responseCode = "204",
-                    description = "Sesión cancelada exitosamente"
+                    responseCode = "200",
+                    description = "Sesión cancelada exitosamente",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CancelSessionResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "message": "Sesión cancelada exitosamente"
+                                    }
+                                    """)
+                    )
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "Sesión no encontrada",
+                    description = "Sesión no encontrada o ya cancelada",
                     content = @Content(
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
                                     {
-                                      "error": "Sesión no encontrada"
+                                      "message": "No hay una sesión activa con el ID indicado"
                                     }
                                     """)
                     )
             )
     })
-    public ResponseEntity<Void> cancel(
+    public ResponseEntity<CancelSessionResponse> cancel(
             @Parameter(description = "ID de la sesión a cancelar", required = true)
             @PathVariable UUID id) {
         bookSessionUseCase.cancel(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(new CancelSessionResponse("Sesión cancelada exitosamente"));
     }
 
     @PutMapping("/{id}/reschedule")

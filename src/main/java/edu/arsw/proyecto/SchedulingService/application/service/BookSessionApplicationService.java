@@ -9,6 +9,7 @@ import edu.arsw.proyecto.SchedulingService.application.port.out.SlotLockPort;
 import edu.arsw.proyecto.SchedulingService.domain.exception.SessionNotFoundException;
 import edu.arsw.proyecto.SchedulingService.domain.exception.SlotNotAvailableException;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
+import edu.arsw.proyecto.SchedulingService.domain.model.SessionStatus;
 import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
 import edu.arsw.proyecto.SchedulingService.domain.service.SchedulingDomainService;
 import org.springframework.stereotype.Service;
@@ -102,6 +103,10 @@ public class BookSessionApplicationService implements BookSessionUseCase {
     public void cancel(UUID sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new SessionNotFoundException("Sesión no encontrada"));
+
+        if (session.getStatus() == SessionStatus.CANCELLED) {
+            throw new SessionNotFoundException("No hay una sesión activa con el ID indicado");
+        }
 
         session.cancel();
         sessionRepository.save(session);
