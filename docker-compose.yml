@@ -1,9 +1,35 @@
 services:
+  scheduling-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scheduling-app
+    ports:
+      - "8082:8082"
+    environment:
+      DB_HOST: scheduling-postgres
+      DB_PORT: 5432
+      DB_NAME: scheduling_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: scheduling-redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: scheduling-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: scheduling-postgres
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_DB: scheduling_db
       POSTGRES_USER: postgres
@@ -16,24 +42,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     container_name: scheduling-redis
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: scheduling-rabbitmq
-    ports:
-      - "5672:5672"   # Puerto para aplicaciones
-      - "15672:15672" # Puerto para interfaz web
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -42,6 +65,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
 networks:
   default:
