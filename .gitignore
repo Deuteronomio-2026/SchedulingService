@@ -1,0 +1,15 @@
+# Archivos y carpetas que deben ser ignorados por Git
+.idea/
+*.iml
+*.class
+/target/
+/.classpath
+/.project
+/.settings/
+# Archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
+# Archivos de log
+*.log
+# Archivos de configuración de entorno
+.env
