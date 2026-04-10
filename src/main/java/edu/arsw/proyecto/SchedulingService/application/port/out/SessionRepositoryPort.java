@@ -11,5 +11,6 @@ public interface SessionRepositoryPort {
     Session save(Session session);
     Optional<Session> findById(UUID id);
     boolean existsByPsychologistAndSlot(UUID psychologistId, TimeSlot slot);
+    void deleteAll();
     List<Session> findAll();
 }

@@ -5,6 +5,7 @@ import edu.arsw.proyecto.SchedulingService.application.dto.RescheduleSessionDTO;
 import edu.arsw.proyecto.SchedulingService.application.port.in.BookSessionUseCase;
 import edu.arsw.proyecto.SchedulingService.domain.model.Session;
 import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.CancelSessionResponse;
+import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.DeleteAllSessionsResponse;
 import edu.arsw.proyecto.SchedulingService.infrastructure.controller.dto.SessionResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -138,6 +139,30 @@ public class SchedulingController {
             @PathVariable UUID id) {
         bookSessionUseCase.cancel(id);
         return ResponseEntity.ok(new CancelSessionResponse("Sesión cancelada exitosamente"));
+    }
+
+    @DeleteMapping
+    @Operation(
+            summary = "Eliminar todas las sesiones",
+            description = "Borra físicamente todas las sesiones registradas en la base de datos"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Sesiones eliminadas exitosamente",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = DeleteAllSessionsResponse.class),
+                    examples = @ExampleObject(value = """
+                            {
+                              \"message\": \"Sesiones eliminadas exitosamente\",
+                              \"deletedCount\": 12
+                            }
+                            """)
+            )
+    )
+    public ResponseEntity<DeleteAllSessionsResponse> deleteAll() {
+        int deletedCount = bookSessionUseCase.deleteAll();
+        return ResponseEntity.ok(new DeleteAllSessionsResponse("Sesiones eliminadas exitosamente", deletedCount));
     }
 
     @PutMapping("/{id}/reschedule")

@@ -10,5 +10,6 @@ public interface BookSessionUseCase {
     Session book(BookSessionDTO command);
     Session reschedule(UUID sessionId, RescheduleSessionDTO command);
     void cancel(UUID sessionId);
+    int deleteAll();
     List<Session> findAll();
 }
