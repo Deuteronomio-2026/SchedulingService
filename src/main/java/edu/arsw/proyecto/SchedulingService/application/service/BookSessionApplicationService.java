@@ -115,6 +115,16 @@ public class BookSessionApplicationService implements BookSessionUseCase {
     }
 
     @Override
+    public int deleteAll() {
+        List<Session> sessions = sessionRepository.findAll();
+        for (Session session : sessions) {
+            slotLock.unlockSlot(session.getPsychologistId(), session.getTimeSlot());
+        }
+        sessionRepository.deleteAll();
+        return sessions.size();
+    }
+
+    @Override
     public List<Session> findAll() {
         return sessionRepository.findAll();
     }

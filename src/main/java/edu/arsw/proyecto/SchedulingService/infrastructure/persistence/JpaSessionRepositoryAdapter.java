@@ -39,6 +39,11 @@ public class JpaSessionRepositoryAdapter implements SessionRepositoryPort {
     }
 
     @Override
+    public void deleteAll() {
+        jpa.deleteAllInBatch();
+    }
+
+    @Override
     public List<Session> findAll() {
         return jpa.findAll().stream()
                 .map(this::toDomain)

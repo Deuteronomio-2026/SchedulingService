@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -451,4 +452,34 @@ class BookSessionApplicationServiceTest {
         verify(slotLock, never()).lockSlot(any(), any());
         verify(eventPublisher, never()).publishSessionRescheduled(any());
     }
+
+        @Test
+        @DisplayName("Should delete all sessions and unlock all slots")
+        void shouldDeleteAllSessionsAndUnlockAllSlots() {
+                UUID patientId1 = UUID.randomUUID();
+                UUID psychologistId1 = UUID.randomUUID();
+                TimeSlot slot1 = new TimeSlot(LocalDate.of(2026, 4, 15), LocalTime.of(14, 0), LocalTime.of(15, 0));
+                Session session1 = Session.reconstituteFromPersistence(
+                                UUID.randomUUID(), patientId1, psychologistId1, slot1,
+                                SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ, SessionStatus.CONFIRMED, LocalDateTime.now()
+                );
+
+                UUID patientId2 = UUID.randomUUID();
+                UUID psychologistId2 = UUID.randomUUID();
+                TimeSlot slot2 = new TimeSlot(LocalDate.of(2026, 4, 16), LocalTime.of(9, 0), LocalTime.of(10, 0));
+                Session session2 = Session.reconstituteFromPersistence(
+                                UUID.randomUUID(), patientId2, psychologistId2, slot2,
+                        SessionType.PRESENTIAL, SessionAttentionType.SEGUIMIENTO, SessionStatus.CONFIRMED, LocalDateTime.now()
+                );
+
+                when(sessionRepository.findAll()).thenReturn(List.of(session1, session2));
+
+                int deletedCount = applicationService.deleteAll();
+
+                assertEquals(2, deletedCount);
+                verify(slotLock).unlockSlot(psychologistId1, slot1);
+                verify(slotLock).unlockSlot(psychologistId2, slot2);
+                verify(sessionRepository).deleteAll();
+                verifyNoInteractions(domainService, eventPublisher);
+        }
 }
