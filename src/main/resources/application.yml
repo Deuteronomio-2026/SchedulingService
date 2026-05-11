@@ -37,10 +37,7 @@ spring:
       host: localhost
       port: 6379
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
+    addresses: ${RABBITMQ_URL:amqps://znyracho:6OWkLPKTK6ayX4_Kc7ayjS2KeVROhj0d@moose.rmq.cloudamqp.com/znyracho}
 
 ---
 # Profile: Production (PostgreSQL)
