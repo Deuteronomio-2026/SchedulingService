@@ -41,6 +41,7 @@ spring:
 
 ---
 # Profile: Production (PostgreSQL)
+# Profile: Production (PostgreSQL)
 spring:
   config:
     activate:
@@ -59,7 +60,4 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
   rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    addresses: ${RABBITMQ_URL:amqps://znyracho:6OWkLPKTK6ayX4_Kc7ayjS2KeVROhj0d@moose.rmq.cloudamqp.com/znyracho}
