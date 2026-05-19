@@ -13,3 +13,6 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_psychologist_date_start
   ON sessions (psychologist_id, date, start_time);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_sessions_psychologist_slot
+  ON sessions (psychologist_id, date, start_time);

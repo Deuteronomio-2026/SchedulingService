@@ -16,7 +16,13 @@ import java.util.UUID;
 @Entity
 @Getter
 @Setter
-@Table(name = "sessions")
+@Table(
+        name = "sessions",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_sessions_psychologist_slot",
+                columnNames = {"psychologist_id", "date", "start_time"}
+        )
+)
 public class SessionJpaEntity {
 
     @Id

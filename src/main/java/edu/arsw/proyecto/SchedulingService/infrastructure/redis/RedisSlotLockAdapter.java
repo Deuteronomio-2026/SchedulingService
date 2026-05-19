@@ -25,6 +25,15 @@ public class RedisSlotLockAdapter implements SlotLockPort {
     }
 
     @Override
+    public boolean tryLockSlot(UUID psychologistId, TimeSlot slot) {
+        return Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(
+                buildKey(psychologistId, slot),
+                "locked",
+                TTL_MINUTES, TimeUnit.MINUTES
+        ));
+    }
+
+    @Override
     public void lockSlot(UUID psychologistId, TimeSlot slot) {
         redisTemplate.opsForValue().set(
                 buildKey(psychologistId, slot),

@@ -79,7 +79,7 @@ class BookSessionApplicationServiceTest {
         TimeSlot expectedSlot = new TimeSlot(dto.date(), dto.startTime(), dto.endTime());
         Session mockSession = new Session(patientId, psychologistId, expectedSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
         when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class), eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ)))
                 .thenReturn(mockSession);
@@ -90,10 +90,10 @@ class BookSessionApplicationServiceTest {
         assertNotNull(result);
         assertEquals(SessionStatus.CONFIRMED, result.getStatus());
 
-        verify(slotLock).isLocked(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
         verify(sessionRepository).existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class));
         verify(domainService).createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class), eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ));
-        verify(slotLock).lockSlot(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
         verify(sessionRepository).save(any(Session.class));
         verify(eventPublisher).publishSessionBooked(any(Session.class));
     }
@@ -113,7 +113,7 @@ class BookSessionApplicationServiceTest {
                 SessionAttentionType.PRIMERA_VEZ
         );
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
 
         SlotNotAvailableException exception = assertThrows(
                 SlotNotAvailableException.class,
@@ -122,7 +122,7 @@ class BookSessionApplicationServiceTest {
 
         assertEquals("Horario no disponible", exception.getMessage());
 
-        verify(slotLock).isLocked(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
         verify(sessionRepository, never()).existsByPsychologistAndSlot(any(), any());
         verify(domainService, never()).createSession(any(), any(), any(), any(), any());
         verify(sessionRepository, never()).save(any());
@@ -144,7 +144,7 @@ class BookSessionApplicationServiceTest {
                 SessionAttentionType.PRIMERA_VEZ
         );
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
 
         SlotNotAvailableException exception = assertThrows(
@@ -154,7 +154,7 @@ class BookSessionApplicationServiceTest {
 
         assertEquals("Horario ya reservado", exception.getMessage());
 
-        verify(slotLock).isLocked(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
         verify(sessionRepository).existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class));
         verify(domainService, never()).createSession(any(), any(), any(), any(), any());
         verify(sessionRepository, never()).save(any());
@@ -179,7 +179,7 @@ class BookSessionApplicationServiceTest {
         TimeSlot expectedSlot = new TimeSlot(dto.date(), dto.startTime(), dto.endTime());
         Session mockSession = new Session(patientId, psychologistId, expectedSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
         when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class), eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ)))
                 .thenReturn(mockSession);
@@ -303,7 +303,7 @@ class BookSessionApplicationServiceTest {
         TimeSlot expectedSlot = new TimeSlot(dto.date(), dto.startTime(), dto.endTime());
         Session mockSession = new Session(patientId, psychologistId, expectedSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
         when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class), eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ)))
                 .thenReturn(mockSession);
@@ -332,7 +332,7 @@ class BookSessionApplicationServiceTest {
         TimeSlot expectedSlot = new TimeSlot(dto.date(), dto.startTime(), dto.endTime());
         Session mockSession = new Session(patientId, psychologistId, expectedSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
 
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
         when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class), eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ)))
                 .thenReturn(mockSession);
@@ -340,7 +340,7 @@ class BookSessionApplicationServiceTest {
 
         applicationService.book(dto);
 
-        verify(slotLock).lockSlot(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
     }
 
     @Test
@@ -374,7 +374,7 @@ class BookSessionApplicationServiceTest {
         );
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
         when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
         when(sessionRepository.save(any(Session.class))).thenReturn(session);
 
@@ -385,7 +385,7 @@ class BookSessionApplicationServiceTest {
         assertEquals(LocalTime.of(9, 0), result.getTimeSlot().getStartTime());
         assertEquals(LocalTime.of(10, 0), result.getTimeSlot().getEndTime());
 
-        verify(slotLock).lockSlot(eq(psychologistId), any(TimeSlot.class));
+        verify(slotLock).tryLockSlot(eq(psychologistId), any(TimeSlot.class));
         verify(slotLock).unlockSlot(eq(psychologistId), eq(oldSlot));
         verify(sessionRepository).save(session);
         verify(eventPublisher).publishSessionRescheduled(session);
@@ -422,7 +422,7 @@ class BookSessionApplicationServiceTest {
         );
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
-        when(slotLock.isLocked(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
 
         SlotNotAvailableException exception = assertThrows(
                 SlotNotAvailableException.class,
@@ -453,7 +453,7 @@ class BookSessionApplicationServiceTest {
         );
 
         assertEquals("Sesión no encontrada", exception.getMessage());
-        verify(slotLock, never()).lockSlot(any(), any());
+        verify(slotLock, never()).tryLockSlot(any(), any());
         verify(eventPublisher, never()).publishSessionRescheduled(any());
     }
 

@@ -14,7 +14,9 @@ import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
 import edu.arsw.proyecto.SchedulingService.domain.service.SchedulingDomainService;
 import edu.arsw.proyecto.SchedulingService.infrastructure.observability.ObservabilityFacade;
 import io.micrometer.core.instrument.Timer;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -42,16 +44,18 @@ public class BookSessionApplicationService implements BookSessionUseCase {
     }
 
     @Override
+    @Transactional
     public Session book(BookSessionDTO cmd) {
         Timer.Sample sample = observability.startLatencyMeasurement();
         observability.recordBookingAttempt();
+        TimeSlot slot = new TimeSlot(
+                cmd.date(), cmd.startTime(), cmd.endTime()
+        );
+        boolean slotAcquired = false;
 
         try {
-            TimeSlot slot = new TimeSlot(
-                    cmd.date(), cmd.startTime(), cmd.endTime()
-            );
-
-            if (slotLock.isLocked(cmd.psychologistId(), slot)) {
+            slotAcquired = slotLock.tryLockSlot(cmd.psychologistId(), slot);
+            if (!slotAcquired) {
                 observability.recordDoubleBookingDetected(
                         cmd.psychologistId(), null, null, cmd.patientId(), 0);
                 throw new SlotNotAvailableException("Horario no disponible");
@@ -59,6 +63,8 @@ public class BookSessionApplicationService implements BookSessionUseCase {
 
             if (sessionRepository.existsByPsychologistAndSlot(
                     cmd.psychologistId(), slot)) {
+                slotLock.unlockSlot(cmd.psychologistId(), slot);
+                slotAcquired = false;
                 observability.recordRejectedBooking(
                         cmd.psychologistId(),
                         cmd.date().toString(),
@@ -71,8 +77,6 @@ public class BookSessionApplicationService implements BookSessionUseCase {
             );
 
             session.confirm();
-
-            slotLock.lockSlot(cmd.psychologistId(), slot);
 
             Session saved = sessionRepository.save(session);
 
@@ -90,7 +94,20 @@ public class BookSessionApplicationService implements BookSessionUseCase {
         } catch (SlotNotAvailableException | SessionNotFoundException e) {
             observability.stopLatencyMeasurement(sample);
             throw e;
+        } catch (DataIntegrityViolationException e) {
+            if (slotAcquired) {
+                slotLock.unlockSlot(cmd.psychologistId(), slot);
+            }
+            observability.stopLatencyMeasurement(sample);
+            observability.recordRejectedBooking(
+                    cmd.psychologistId(),
+                    cmd.date().toString(),
+                    cmd.startTime().toString());
+            throw new SlotNotAvailableException("Horario ya reservado");
         } catch (Exception e) {
+            if (slotAcquired) {
+                slotLock.unlockSlot(cmd.psychologistId(), slot);
+            }
             long latencyMs = observability.stopLatencyMeasurement(sample);
             observability.recordBookingError(
                     cmd.patientId(),
@@ -103,8 +120,11 @@ public class BookSessionApplicationService implements BookSessionUseCase {
     }
 
     @Override
+    @Transactional
     public Session reschedule(UUID sessionId, RescheduleSessionDTO cmd) {
         Timer.Sample sample = observability.startLatencyMeasurement();
+        TimeSlot lockedNewSlot = null;
+        UUID lockedPsychologistId = null;
 
         try {
             Session session = sessionRepository.findById(sessionId)
@@ -121,15 +141,20 @@ public class BookSessionApplicationService implements BookSessionUseCase {
                 throw new IllegalArgumentException("La nueva franja horaria debe ser diferente a la actual");
             }
 
-            if (slotLock.isLocked(session.getPsychologistId(), newSlot)) {
+            boolean newSlotAcquired = slotLock.tryLockSlot(session.getPsychologistId(), newSlot);
+            if (!newSlotAcquired) {
                 throw new SlotNotAvailableException("Horario no disponible");
             }
+            lockedNewSlot = newSlot;
+            lockedPsychologistId = session.getPsychologistId();
 
             if (sessionRepository.existsByPsychologistAndSlot(session.getPsychologistId(), newSlot)) {
+                slotLock.unlockSlot(session.getPsychologistId(), newSlot);
+                lockedNewSlot = null;
+                lockedPsychologistId = null;
                 throw new SlotNotAvailableException("Horario ya reservado");
             }
 
-            slotLock.lockSlot(session.getPsychologistId(), newSlot);
             slotLock.unlockSlot(session.getPsychologistId(), oldSlot);
 
             session.reschedule(newSlot);
@@ -147,7 +172,16 @@ public class BookSessionApplicationService implements BookSessionUseCase {
 
             eventPublisher.publishSessionRescheduled(saved);
             return saved;
+        } catch (DataIntegrityViolationException e) {
+            if (lockedNewSlot != null) {
+                slotLock.unlockSlot(lockedPsychologistId, lockedNewSlot);
+            }
+            observability.stopLatencyMeasurement(sample);
+            throw new SlotNotAvailableException("Horario ya reservado");
         } catch (Exception e) {
+            if (lockedNewSlot != null) {
+                slotLock.unlockSlot(lockedPsychologistId, lockedNewSlot);
+            }
             observability.stopLatencyMeasurement(sample);
             throw e;
         }
