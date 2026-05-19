@@ -13,6 +13,7 @@ import edu.arsw.proyecto.SchedulingService.domain.model.SessionStatus;
 import edu.arsw.proyecto.SchedulingService.domain.model.SessionType;
 import edu.arsw.proyecto.SchedulingService.domain.model.TimeSlot;
 import edu.arsw.proyecto.SchedulingService.domain.service.SchedulingDomainService;
+import edu.arsw.proyecto.SchedulingService.infrastructure.observability.ObservabilityFacade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,12 +49,15 @@ class BookSessionApplicationServiceTest {
     @Mock
     private EventPublisherPort eventPublisher;
 
+    @Mock
+    private ObservabilityFacade observability;
+
     private BookSessionApplicationService applicationService;
 
     @BeforeEach
     void setUp() {
         applicationService = new BookSessionApplicationService(
-                domainService, sessionRepository, slotLock, eventPublisher
+                domainService, sessionRepository, slotLock, eventPublisher, observability
         );
     }
 
