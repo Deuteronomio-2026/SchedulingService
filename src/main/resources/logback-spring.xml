@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <property name="LOG_FILE" value="logs/scheduling-service.json"/>
+    <property name="LOG_FILE_MAX_SIZE" value="10MB"/>
+    <property name="LOG_FILE_MAX_HISTORY" value="30"/>
+    <property name="LOG_DATEFORMAT_PATTERN" value="yyyy-MM-dd'T'HH:mm:ss.SSSXXX"/>
+
+    <springProperty name="spring.application.name" source="spring.application.name" defaultValue="scheduling-service"/>
+    <springProperty name="spring.profiles.active" source="spring.profiles.active" defaultValue="dev"/>
+
+    <!-- Profile Development: Console with JSON -->
+    <springProfile name="dev">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp>
+                        <fieldName>timestamp</fieldName>
+                        <timeZone>UTC</timeZone>
+                    </timestamp>
+                    <logLevel>
+                        <fieldName>level</fieldName>
+                    </logLevel>
+                    <message>
+                        <fieldName>message</fieldName>
+                    </message>
+                    <loggerName>
+                        <fieldName>logger</fieldName>
+                    </loggerName>
+                    <threadName>
+                        <fieldName>thread</fieldName>
+                    </threadName>
+                    <mdc>
+                        <fieldName>correlationId</fieldName>
+                    </mdc>
+                    <mdc>
+                        <fieldName>event</fieldName>
+                    </mdc>
+                    <mdc>
+                        <fieldName>actor</fieldName>
+                    </mdc>
+                    <arguments>
+                        <fieldName>detail</fieldName>
+                    </arguments>
+                    <stackTrace>
+                        <fieldName>stackTrace</fieldName>
+                    </stackTrace>
+                </providers>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="edu.arsw.proyecto.SchedulingService" level="DEBUG"/>
+        <logger name="org.springframework.web" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+    </springProfile>
+
+    <!-- Profile Production: File with JSON -->
+    <springProfile name="prod">
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp>
+                        <fieldName>timestamp</fieldName>
+                        <timeZone>UTC</timeZone>
+                    </timestamp>
+                    <logLevel>
+                        <fieldName>level</fieldName>
+                    </logLevel>
+                    <message>
+                        <fieldName>message</fieldName>
+                    </message>
+                    <loggerName>
+                        <fieldName>logger</fieldName>
+                    </loggerName>
+                    <threadName>
+                        <fieldName>thread</fieldName>
+                    </threadName>
+                    <mdc>
+                        <fieldName>correlationId</fieldName>
+                    </mdc>
+                    <mdc>
+                        <fieldName>event</fieldName>
+                    </mdc>
+                    <mdc>
+                        <fieldName>actor</fieldName>
+                    </mdc>
+                    <arguments>
+                        <fieldName>detail</fieldName>
+                    </arguments>
+                    <stackTrace>
+                        <fieldName>stackTrace</fieldName>
+                    </stackTrace>
+                </providers>
+            </encoder>
+
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/scheduling-service-%d{yyyy-MM-dd}.%i.json</fileNamePattern>
+                <maxFileSize>${LOG_FILE_MAX_SIZE}</maxFileSize>
+                <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+        </appender>
+
+        <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+            <appender-ref ref="FILE"/>
+            <queueSize>512</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <includeCallerData>false</includeCallerData>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+
+        <logger name="edu.arsw.proyecto.SchedulingService" level="INFO"/>
+        <logger name="org.springframework.web" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+    </springProfile>
+
+    <!-- Default fallback -->
+    <root level="INFO"/>
+
+</configuration>

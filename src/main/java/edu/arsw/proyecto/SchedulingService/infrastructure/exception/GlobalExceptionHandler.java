@@ -2,6 +2,7 @@ package edu.arsw.proyecto.SchedulingService.infrastructure.exception;
 
 import edu.arsw.proyecto.SchedulingService.domain.exception.SlotNotAvailableException;
 import edu.arsw.proyecto.SchedulingService.domain.exception.SessionNotFoundException;
+import edu.arsw.proyecto.SchedulingService.infrastructure.observability.LoggingService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -16,16 +17,26 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @JsonIgnoreType
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private final LoggingService loggingService;
+
+    public GlobalExceptionHandler(LoggingService loggingService) {
+        this.loggingService = loggingService;
+    }
 
     @ExceptionHandler(SlotNotAvailableException.class)
     public ResponseEntity<Object> handleSlotNotAvailableException(
             SlotNotAvailableException ex, WebRequest request) {
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), "SlotNotAvailableException",
+                ex.getMessage(), getStackTrace(ex));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -39,6 +50,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Object> handleIllegalArgumentException(
             IllegalArgumentException ex, WebRequest request) {
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), "IllegalArgumentException",
+                ex.getMessage(), getStackTrace(ex));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -52,6 +67,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Object> handleIllegalStateException(
             IllegalStateException ex, WebRequest request) {
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), "IllegalStateException",
+                ex.getMessage(), getStackTrace(ex));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -65,6 +84,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SessionNotFoundException.class)
     public ResponseEntity<Object> handleSessionNotFoundException(
             SessionNotFoundException ex, WebRequest request) {
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), "SessionNotFoundException",
+                ex.getMessage(), getStackTrace(ex));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.NOT_FOUND.value());
@@ -87,6 +110,10 @@ public class GlobalExceptionHandler {
             }
         }
 
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), "HttpMessageNotReadableException",
+                message, getStackTrace(ex));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
@@ -100,7 +127,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGlobalException(
             Exception ex, WebRequest request) {
-        LOGGER.error("Error inesperado procesando {}", request.getDescription(false), ex);
+        loggingService.logBookingError(
+                UUID.randomUUID(), UUID.randomUUID(), ex.getClass().getSimpleName(),
+                ex.getMessage(), getStackTrace(ex));
+
+        LOGGER.error("Unexpected error processing {}", request.getDescription(false), ex);
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -109,5 +141,13 @@ public class GlobalExceptionHandler {
         body.put("path", request.getDescription(false).replace("uri=", ""));
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private String getStackTrace(Exception e) {
+        StringBuilder sb = new StringBuilder();
+        for (StackTraceElement element : e.getStackTrace()) {
+            sb.append(element.toString()).append("\n");
+        }
+        return sb.toString();
     }
 }
