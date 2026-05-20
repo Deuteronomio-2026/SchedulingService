@@ -25,8 +25,14 @@ jobs:
       run: mvn clean compile
       
     - name: Run tests
-      run: mvn test
-      
+      run: mvn verify
+      env:
+        RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+
+    - name: SonarCloud Analysis
+      run: mvn sonar:sonar -Dsonar.projectKey=Deuteronomio-2026_SchedulingService -Dsonar.organization=deuteronomio-2026 -Dsonar.host.url=https://sonarcloud.io -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     - name: Package application
       run: mvn package -DskipTests
       
