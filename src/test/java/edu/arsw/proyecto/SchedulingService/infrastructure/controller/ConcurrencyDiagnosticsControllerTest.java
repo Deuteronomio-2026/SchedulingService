@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("ConcurrencyDiagnosticsController - Unit Tests")
 class ConcurrencyDiagnosticsControllerTest {
@@ -75,6 +76,17 @@ class ConcurrencyDiagnosticsControllerTest {
         assertEquals(1, body.successes());
         assertEquals(1, body.rejections());
         assertEquals(0, body.errors());
+    }
+
+    @Test
+    @DisplayName("Should stop executor when waiting thread is interrupted")
+    void shouldStopExecutorWhenWaitingThreadIsInterrupted() {
+        ConcurrencyDiagnosticsController controller = new ConcurrencyDiagnosticsController(
+                useCaseWithOutcomes(Outcome.SUCCESS, Outcome.REJECTION));
+
+        Thread.currentThread().interrupt();
+        assertThrows(InterruptedException.class, () -> controller.runConcurrencyBooking(request(2)));
+        Thread.interrupted();
     }
 
     private static ConcurrencyDiagnosticsController.ConcurrencyDiagnosticsRequest request(int requestCount) {
