@@ -15,7 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -45,7 +47,7 @@ class SchedulingDomainServiceTest {
                 LocalTime.of(15, 0)
         );
 
-        when(lockPort.acquireLock(psychologistId)).thenReturn(true);
+        whenLockSucceeds(psychologistId);
 
         Session session = domainService.createSession(
                 patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
@@ -58,8 +60,7 @@ class SchedulingDomainServiceTest {
         assertEquals(SessionType.VIRTUAL, session.getType());
         assertEquals(SessionAttentionType.PRIMERA_VEZ, session.getAttentionType());
 
-        verify(lockPort).acquireLock(psychologistId);
-        verify(lockPort).releaseLock(psychologistId);
+        verify(lockPort).withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
     }
 
     @Test
@@ -73,14 +74,13 @@ class SchedulingDomainServiceTest {
                 LocalTime.of(15, 0)
         );
 
-        when(lockPort.acquireLock(psychologistId)).thenReturn(false);
+        whenLockFails(psychologistId);
 
         assertThrows(SlotNotAvailableException.class, () ->
                 domainService.createSession(patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ)
         );
 
-        verify(lockPort).acquireLock(psychologistId);
-        verify(lockPort, never()).releaseLock(psychologistId);
+        verify(lockPort).withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
     }
 
     @Test
@@ -94,14 +94,14 @@ class SchedulingDomainServiceTest {
                 LocalTime.of(15, 0)
         );
 
-        when(lockPort.acquireLock(psychologistId)).thenReturn(true);
+        whenLockSucceeds(psychologistId);
 
         Session session = domainService.createSession(
                 patientId, psychologistId, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
         );
 
         assertNotNull(session);
-        verify(lockPort).releaseLock(psychologistId);
+        verify(lockPort).withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
     }
 
     @Test
@@ -115,7 +115,7 @@ class SchedulingDomainServiceTest {
                 LocalTime.of(15, 0)
         );
 
-        when(lockPort.acquireLock(psychologistId)).thenReturn(true);
+        whenLockSucceeds(psychologistId);
 
         Session session = domainService.createSession(
                 patientId, psychologistId, timeSlot, SessionType.PRESENTIAL, SessionAttentionType.SEGUIMIENTO
@@ -123,7 +123,7 @@ class SchedulingDomainServiceTest {
 
         assertEquals(SessionType.PRESENTIAL, session.getType());
         assertEquals(SessionAttentionType.SEGUIMIENTO, session.getAttentionType());
-        verify(lockPort).releaseLock(psychologistId);
+        verify(lockPort).withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
     }
 
     @Test
@@ -138,8 +138,8 @@ class SchedulingDomainServiceTest {
                 LocalTime.of(15, 0)
         );
 
-        when(lockPort.acquireLock(psychologist1)).thenReturn(true);
-        when(lockPort.acquireLock(psychologist2)).thenReturn(true);
+        whenLockSucceeds(psychologist1);
+        whenLockSucceeds(psychologist2);
 
         Session session1 = domainService.createSession(
                 patientId, psychologist1, timeSlot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ
@@ -153,9 +153,20 @@ class SchedulingDomainServiceTest {
         assertEquals(psychologist1, session1.getPsychologistId());
         assertEquals(psychologist2, session2.getPsychologistId());
 
-        verify(lockPort).acquireLock(psychologist1);
-        verify(lockPort).acquireLock(psychologist2);
-        verify(lockPort).releaseLock(psychologist1);
-        verify(lockPort).releaseLock(psychologist2);
+        verify(lockPort).withLock(eq(psychologist1), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
+        verify(lockPort).withLock(eq(psychologist2), org.mockito.ArgumentMatchers.<Supplier<Session>>any());
+    }
+
+    private void whenLockSucceeds(UUID psychologistId) {
+        when(lockPort.withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any()))
+                .thenAnswer(invocation -> {
+                    Supplier<Session> action = invocation.getArgument(1);
+                    return Optional.of(action.get());
+                });
+    }
+
+    private void whenLockFails(UUID psychologistId) {
+        when(lockPort.withLock(eq(psychologistId), org.mockito.ArgumentMatchers.<Supplier<Session>>any()))
+                .thenReturn(Optional.empty());
     }
 }

@@ -19,16 +19,11 @@ public class SchedulingDomainService {
 
     public Session createSession(UUID patientId, UUID psychologistId,
                                  TimeSlot slot, SessionType type, SessionAttentionType attentionType) {
-        boolean acquired = lockPort.acquireLock(psychologistId);
-        if (!acquired) {
-            throw new SlotNotAvailableException(
-                    "No se pudo adquirir el lock para el psicólogo"
-            );
-        }
-        try {
-            return new Session(patientId, psychologistId, slot, type, attentionType);
-        } finally {
-            lockPort.releaseLock(psychologistId);
-        }
+        return lockPort.withLock(
+                psychologistId,
+                () -> new Session(patientId, psychologistId, slot, type, attentionType)
+        ).orElseThrow(() -> new SlotNotAvailableException(
+                "No se pudo adquirir el lock para el psicólogo"
+        ));
     }
 }
