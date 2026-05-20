@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -192,6 +193,76 @@ class BookSessionApplicationServiceTest {
 
         Session savedSession = sessionCaptor.getValue();
         assertEquals(SessionStatus.CONFIRMED, savedSession.getStatus());
+    }
+
+    @Test
+    @DisplayName("Should release slot and reject booking when save violates unique constraint")
+    void shouldReleaseSlotAndRejectBookingWhenSaveViolatesUniqueConstraint() {
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        BookSessionDTO dto = new BookSessionDTO(
+                patientId,
+                psychologistId,
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0),
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ
+        );
+        TimeSlot slot = new TimeSlot(dto.date(), dto.startTime(), dto.endTime());
+        Session session = new Session(patientId, psychologistId, slot, SessionType.VIRTUAL, SessionAttentionType.PRIMERA_VEZ);
+
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class),
+                eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ))).thenReturn(session);
+        when(sessionRepository.save(any(Session.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        SlotNotAvailableException exception = assertThrows(
+                SlotNotAvailableException.class,
+                () -> applicationService.book(dto)
+        );
+
+        assertEquals("Horario ya reservado", exception.getMessage());
+        verify(slotLock).unlockSlot(eq(psychologistId), any(TimeSlot.class));
+        verify(observability).recordRejectedBooking(
+                psychologistId, dto.date().toString(), dto.startTime().toString());
+    }
+
+    @Test
+    @DisplayName("Should release slot and record unexpected booking errors")
+    void shouldReleaseSlotAndRecordUnexpectedBookingErrors() {
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        BookSessionDTO dto = new BookSessionDTO(
+                patientId,
+                psychologistId,
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0),
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ
+        );
+
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(domainService.createSession(eq(patientId), eq(psychologistId), any(TimeSlot.class),
+                eq(SessionType.VIRTUAL), eq(SessionAttentionType.PRIMERA_VEZ)))
+                .thenThrow(new IllegalStateException("boom"));
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> applicationService.book(dto)
+        );
+
+        assertEquals("boom", exception.getMessage());
+        verify(slotLock).unlockSlot(eq(psychologistId), any(TimeSlot.class));
+        verify(observability).recordBookingError(
+                eq(patientId),
+                eq(psychologistId),
+                eq("IllegalStateException"),
+                eq("boom"),
+                anyString());
     }
 
     @Test
@@ -392,6 +463,130 @@ class BookSessionApplicationServiceTest {
     }
 
     @Test
+    @DisplayName("Should reject reschedule to the same slot")
+    void shouldRejectRescheduleToTheSameSlot() {
+        UUID sessionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        TimeSlot oldSlot = new TimeSlot(
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0)
+        );
+        Session session = Session.reconstituteFromPersistence(
+                sessionId,
+                patientId,
+                psychologistId,
+                oldSlot,
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ,
+                SessionStatus.CONFIRMED,
+                LocalDateTime.now()
+        );
+        RescheduleSessionDTO dto = new RescheduleSessionDTO(
+                oldSlot.getDate(), oldSlot.getStartTime(), oldSlot.getEndTime());
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> applicationService.reschedule(sessionId, dto)
+        );
+
+        assertEquals("La nueva franja horaria debe ser diferente a la actual", exception.getMessage());
+        verify(slotLock, never()).tryLockSlot(any(), any());
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reject reschedule when new slot already exists")
+    void shouldRejectRescheduleWhenNewSlotAlreadyExists() {
+        UUID sessionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        TimeSlot oldSlot = new TimeSlot(
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0)
+        );
+        Session session = Session.reconstituteFromPersistence(
+                sessionId,
+                patientId,
+                psychologistId,
+                oldSlot,
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ,
+                SessionStatus.CONFIRMED,
+                LocalDateTime.now()
+        );
+        RescheduleSessionDTO dto = new RescheduleSessionDTO(
+                LocalDate.of(2026, 4, 16),
+                LocalTime.of(9, 0),
+                LocalTime.of(10, 0)
+        );
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+
+        SlotNotAvailableException exception = assertThrows(
+                SlotNotAvailableException.class,
+                () -> applicationService.reschedule(sessionId, dto)
+        );
+
+        assertEquals("Horario ya reservado", exception.getMessage());
+        verify(slotLock).unlockSlot(eq(psychologistId), argThat(slot ->
+                slot.getDate().equals(dto.date())
+                        && slot.getStartTime().equals(dto.startTime())
+                        && slot.getEndTime().equals(dto.endTime())));
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should unlock new slot when reschedule save violates unique constraint")
+    void shouldUnlockNewSlotWhenRescheduleSaveViolatesUniqueConstraint() {
+        UUID sessionId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID psychologistId = UUID.randomUUID();
+        TimeSlot oldSlot = new TimeSlot(
+                LocalDate.of(2026, 4, 15),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0)
+        );
+        Session session = Session.reconstituteFromPersistence(
+                sessionId,
+                patientId,
+                psychologistId,
+                oldSlot,
+                SessionType.VIRTUAL,
+                SessionAttentionType.PRIMERA_VEZ,
+                SessionStatus.CONFIRMED,
+                LocalDateTime.now()
+        );
+        RescheduleSessionDTO dto = new RescheduleSessionDTO(
+                LocalDate.of(2026, 4, 16),
+                LocalTime.of(9, 0),
+                LocalTime.of(10, 0)
+        );
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(slotLock.tryLockSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(true);
+        when(sessionRepository.existsByPsychologistAndSlot(eq(psychologistId), any(TimeSlot.class))).thenReturn(false);
+        when(sessionRepository.save(session)).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        SlotNotAvailableException exception = assertThrows(
+                SlotNotAvailableException.class,
+                () -> applicationService.reschedule(sessionId, dto)
+        );
+
+        assertEquals("Horario ya reservado", exception.getMessage());
+        verify(slotLock).unlockSlot(psychologistId, oldSlot);
+        verify(slotLock).unlockSlot(eq(psychologistId), argThat(slot ->
+                slot.getDate().equals(dto.date())
+                        && slot.getStartTime().equals(dto.startTime())
+                        && slot.getEndTime().equals(dto.endTime())));
+    }
+
+    @Test
     @DisplayName("Should throw SlotNotAvailableException when new slot is locked")
     void shouldThrowSlotNotAvailableExceptionWhenNewSlotIsLocked() {
         UUID sessionId = UUID.randomUUID();
@@ -485,5 +680,26 @@ class BookSessionApplicationServiceTest {
                 verify(slotLock).unlockSlot(psychologistId2, slot2);
                 verify(sessionRepository).deleteAll();
                 verifyNoInteractions(domainService, eventPublisher);
+        }
+
+        @Test
+        @DisplayName("Should return all sessions")
+        void shouldReturnAllSessions() {
+                Session session = Session.reconstituteFromPersistence(
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                new TimeSlot(LocalDate.of(2026, 4, 15), LocalTime.of(14, 0), LocalTime.of(15, 0)),
+                                SessionType.VIRTUAL,
+                                SessionAttentionType.PRIMERA_VEZ,
+                                SessionStatus.CONFIRMED,
+                                LocalDateTime.now()
+                );
+                when(sessionRepository.findAll()).thenReturn(List.of(session));
+
+                List<Session> sessions = applicationService.findAll();
+
+                assertEquals(List.of(session), sessions);
+                verifyNoInteractions(domainService, slotLock, eventPublisher);
         }
 }
