@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -47,7 +48,7 @@ public class ConcurrencyDiagnosticsController {
             AtomicInteger successes = new AtomicInteger();
             AtomicInteger rejections = new AtomicInteger();
             AtomicInteger errors = new AtomicInteger();
-            List<ConcurrencyRequestResult> results = new ArrayList<>();
+            List<ConcurrencyRequestResult> results = new CopyOnWriteArrayList<>();
             List<Future<?>> futures = new ArrayList<>();
 
             for (int index = 1; index <= requestCount; index++) {
@@ -119,12 +120,9 @@ public class ConcurrencyDiagnosticsController {
             }
 
             long durationMs = elapsedMs(startedAt);
-            List<ConcurrencyRequestResult> sortedResults;
-            synchronized (results) {
-                sortedResults = results.stream()
-                        .sorted(Comparator.comparingInt(ConcurrencyRequestResult::index))
-                        .toList();
-            }
+                List<ConcurrencyRequestResult> sortedResults = results.stream()
+                    .sorted(Comparator.comparingInt(ConcurrencyRequestResult::index))
+                    .toList();
 
             return ResponseEntity.ok(new ConcurrencyDiagnosticsResponse(
                     requestCount,
@@ -139,9 +137,7 @@ public class ConcurrencyDiagnosticsController {
     }
 
     private static void addResult(List<ConcurrencyRequestResult> results, ConcurrencyRequestResult result) {
-        synchronized (results) {
-            results.add(result);
-        }
+        results.add(result);
     }
 
     private static long elapsedMs(long startedAt) {
