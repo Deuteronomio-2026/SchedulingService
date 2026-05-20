@@ -43,97 +43,97 @@ public class ConcurrencyDiagnosticsController {
             @RequestBody ConcurrencyDiagnosticsRequest request) throws Exception {
         int requestCount = Math.max(MIN_REQUESTS, Math.min(MAX_REQUESTS, request.requestCount()));
         ExecutorService executor = Executors.newFixedThreadPool(requestCount);
-        CountDownLatch start = new CountDownLatch(1);
-        AtomicInteger successes = new AtomicInteger();
-        AtomicInteger rejections = new AtomicInteger();
-        AtomicInteger errors = new AtomicInteger();
-        List<ConcurrencyRequestResult> results = new ArrayList<>();
-        List<Future<?>> futures = new ArrayList<>();
-
-        for (int index = 1; index <= requestCount; index++) {
-            int requestIndex = index;
-            futures.add(executor.submit(() -> {
-                start.await();
-                UUID patientId = UUID.randomUUID();
-                long startedAt = System.nanoTime();
-
-                try {
-                    Session session = bookSessionUseCase.book(new BookSessionDTO(
-                            patientId,
-                            request.psychologistId(),
-                            request.date(),
-                            request.startTime(),
-                            request.endTime(),
-                            request.type(),
-                            request.attentionType()
-                    ));
-                    long latencyMs = elapsedMs(startedAt);
-                    successes.incrementAndGet();
-                    addResult(results, new ConcurrencyRequestResult(
-                            requestIndex,
-                            "success",
-                            201,
-                            latencyMs,
-                            patientId,
-                            session.getId(),
-                            "Reserva creada"
-                    ));
-                } catch (SlotNotAvailableException e) {
-                    long latencyMs = elapsedMs(startedAt);
-                    rejections.incrementAndGet();
-                    addResult(results, new ConcurrencyRequestResult(
-                            requestIndex,
-                            "rejected",
-                            400,
-                            latencyMs,
-                            patientId,
-                            null,
-                            e.getMessage()
-                    ));
-                } catch (Exception e) {
-                    long latencyMs = elapsedMs(startedAt);
-                    errors.incrementAndGet();
-                    addResult(results, new ConcurrencyRequestResult(
-                            requestIndex,
-                            "error",
-                            500,
-                            latencyMs,
-                            patientId,
-                            null,
-                            e.getClass().getSimpleName() + ": " + e.getMessage()
-                    ));
-                }
-                return null;
-            }));
-        }
-
-        long startedAt = System.nanoTime();
-        start.countDown();
         try {
+            CountDownLatch start = new CountDownLatch(1);
+            AtomicInteger successes = new AtomicInteger();
+            AtomicInteger rejections = new AtomicInteger();
+            AtomicInteger errors = new AtomicInteger();
+            List<ConcurrencyRequestResult> results = new ArrayList<>();
+            List<Future<?>> futures = new ArrayList<>();
+
+            for (int index = 1; index <= requestCount; index++) {
+                int requestIndex = index;
+                futures.add(executor.submit(() -> {
+                    start.await();
+                    UUID patientId = UUID.randomUUID();
+                    long startedAt = System.nanoTime();
+
+                    try {
+                        Session session = bookSessionUseCase.book(new BookSessionDTO(
+                                patientId,
+                                request.psychologistId(),
+                                request.date(),
+                                request.startTime(),
+                                request.endTime(),
+                                request.type(),
+                                request.attentionType()
+                        ));
+                        long latencyMs = elapsedMs(startedAt);
+                        successes.incrementAndGet();
+                        addResult(results, new ConcurrencyRequestResult(
+                                requestIndex,
+                                "success",
+                                201,
+                                latencyMs,
+                                patientId,
+                                session.getId(),
+                                "Reserva creada"
+                        ));
+                    } catch (SlotNotAvailableException e) {
+                        long latencyMs = elapsedMs(startedAt);
+                        rejections.incrementAndGet();
+                        addResult(results, new ConcurrencyRequestResult(
+                                requestIndex,
+                                "rejected",
+                                400,
+                                latencyMs,
+                                patientId,
+                                null,
+                                e.getMessage()
+                        ));
+                    } catch (Exception e) {
+                        long latencyMs = elapsedMs(startedAt);
+                        errors.incrementAndGet();
+                        addResult(results, new ConcurrencyRequestResult(
+                                requestIndex,
+                                "error",
+                                500,
+                                latencyMs,
+                                patientId,
+                                null,
+                                e.getClass().getSimpleName() + ": " + e.getMessage()
+                        ));
+                    }
+                    return null;
+                }));
+            }
+
+            long startedAt = System.nanoTime();
+            start.countDown();
             for (Future<?> future : futures) {
                 future.get(10, TimeUnit.SECONDS);
             }
+
+            long durationMs = elapsedMs(startedAt);
+            List<ConcurrencyRequestResult> sortedResults;
+            synchronized (results) {
+                sortedResults = results.stream()
+                        .sorted(Comparator.comparingInt(ConcurrencyRequestResult::index))
+                        .toList();
+            }
+
+            return ResponseEntity.ok(new ConcurrencyDiagnosticsResponse(
+                    requestCount,
+                    successes.get(),
+                    rejections.get(),
+                    errors.get(),
+                    durationMs,
+                    durationMs < 500 && successes.get() == 1 && rejections.get() == requestCount - 1 && errors.get() == 0,
+                    sortedResults
+            ));
         } finally {
             executor.shutdownNow();
         }
-
-        long durationMs = elapsedMs(startedAt);
-        List<ConcurrencyRequestResult> sortedResults;
-        synchronized (results) {
-            sortedResults = results.stream()
-                    .sorted(Comparator.comparingInt(ConcurrencyRequestResult::index))
-                    .toList();
-        }
-
-        return ResponseEntity.ok(new ConcurrencyDiagnosticsResponse(
-                requestCount,
-                successes.get(),
-                rejections.get(),
-                errors.get(),
-                durationMs,
-                durationMs < 500 && successes.get() == 1 && rejections.get() == requestCount - 1 && errors.get() == 0,
-                sortedResults
-        ));
     }
 
     private static void addResult(List<ConcurrencyRequestResult> results, ConcurrencyRequestResult result) {
