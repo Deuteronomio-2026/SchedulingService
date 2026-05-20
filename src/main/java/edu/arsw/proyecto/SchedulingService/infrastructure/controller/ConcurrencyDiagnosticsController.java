@@ -42,8 +42,7 @@ public class ConcurrencyDiagnosticsController {
     public ResponseEntity<ConcurrencyDiagnosticsResponse> runConcurrencyBooking(
             @RequestBody ConcurrencyDiagnosticsRequest request) throws Exception {
         int requestCount = Math.max(MIN_REQUESTS, Math.min(MAX_REQUESTS, request.requestCount()));
-        ExecutorService executor = Executors.newFixedThreadPool(requestCount);
-        try {
+        try (ExecutorService executor = Executors.newFixedThreadPool(requestCount)) {
             CountDownLatch start = new CountDownLatch(1);
             AtomicInteger successes = new AtomicInteger();
             AtomicInteger rejections = new AtomicInteger();
@@ -111,7 +110,12 @@ public class ConcurrencyDiagnosticsController {
             long startedAt = System.nanoTime();
             start.countDown();
             for (Future<?> future : futures) {
-                future.get(10, TimeUnit.SECONDS);
+                try {
+                    future.get(10, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    executor.shutdownNow();
+                    throw e;
+                }
             }
 
             long durationMs = elapsedMs(startedAt);
@@ -131,8 +135,6 @@ public class ConcurrencyDiagnosticsController {
                     durationMs < 500 && successes.get() == 1 && rejections.get() == requestCount - 1 && errors.get() == 0,
                     sortedResults
             ));
-        } finally {
-            executor.shutdownNow();
         }
     }
 
