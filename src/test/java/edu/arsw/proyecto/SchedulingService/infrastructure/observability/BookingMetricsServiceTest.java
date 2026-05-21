@@ -29,6 +29,17 @@ class BookingMetricsServiceTest {
         assertEquals(1.0, service.getBookingRejectedTotal());
         assertEquals(0, service.getActiveOperations());
 
+        Timer.Sample endpointSample = service.startBookingEndpointRequest();
+        assertEquals(1, service.getActiveBookingUsers());
+        service.stopBookingEndpointRequest(endpointSample, 201);
+        assertEquals(0, service.getActiveBookingUsers());
+        assertEquals(1.0, service.getBookingResponsesTotal("201"));
+
+        service.stopBookingEndpointRequest(service.startBookingEndpointRequest(), 409);
+        service.stopBookingEndpointRequest(service.startBookingEndpointRequest(), 503);
+        assertEquals(1.0, service.getBookingResponsesTotal("409"));
+        assertEquals(1.0, service.getBookingResponsesTotal("5xx"));
+
         service.recordDoubleBooking();
         service.recordSessionCancellation();
         service.recordSessionReschedule();

@@ -14,9 +14,4 @@ public class MetricsConfiguration {
     public TimedAspect timedAspect(MeterRegistry registry) {
         return new TimedAspect(registry);
     }
-
-    @Bean
-    public MeterRegistry meterRegistry() {
-        return new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
-    }
 }

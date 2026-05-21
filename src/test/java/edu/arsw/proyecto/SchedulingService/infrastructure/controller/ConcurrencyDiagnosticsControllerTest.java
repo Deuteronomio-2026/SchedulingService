@@ -58,6 +58,11 @@ class ConcurrencyDiagnosticsControllerTest {
         assertEquals(1L, kinds.get("success"));
         assertEquals(1L, kinds.get("rejected"));
         assertEquals(1L, kinds.get("error"));
+        assertEquals(409, body.results().stream()
+                .filter(result -> "rejected".equals(result.kind()))
+                .findFirst()
+                .orElseThrow()
+                .httpStatus());
     }
 
     @Test

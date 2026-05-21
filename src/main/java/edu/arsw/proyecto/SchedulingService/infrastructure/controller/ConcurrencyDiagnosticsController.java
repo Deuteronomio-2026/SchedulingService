@@ -85,7 +85,7 @@ public class ConcurrencyDiagnosticsController {
                         addResult(results, new ConcurrencyRequestResult(
                                 requestIndex,
                                 "rejected",
-                                400,
+                                409,
                                 latencyMs,
                                 patientId,
                                 null,

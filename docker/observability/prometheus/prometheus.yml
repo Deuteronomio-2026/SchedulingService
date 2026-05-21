@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: scheduling-service
+    metrics_path: /metrics
+    # If the service is run outside Docker, replace the target below with:
+    # host.docker.internal:8082
+    static_configs:
+      - targets:
+          - scheduling-app:8082
+        labels:
+          service: scheduling-service
+          runtime: docker
