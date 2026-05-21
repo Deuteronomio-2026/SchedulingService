@@ -57,7 +57,7 @@ export function setup() {
 }
 
 export default function () {
-  const response = http.post(apiUrl('/sessions'), JSON.stringify({
+  const bookingRequestBody = {
     patientId: patientIdForVu(),
     psychologistId: PSYCHOLOGIST_ID,
     date: SLOT_DATE,
@@ -65,7 +65,9 @@ export default function () {
     endTime: SLOT_END_TIME,
     type: 'VIRTUAL',
     attentionType: 'PRIMERA_VEZ',
-  }), {
+  };
+
+  const response = http.post(apiUrl('/sessions'), JSON.stringify(bookingRequestBody), {
     headers: {
       'Content-Type': 'application/json',
     },
