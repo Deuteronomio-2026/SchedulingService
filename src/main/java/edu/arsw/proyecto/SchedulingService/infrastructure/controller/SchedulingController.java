@@ -63,8 +63,8 @@ public class SchedulingController {
                     )
             ),
             @ApiResponse(
-                    responseCode = "400",
-                    description = "Horario no disponible o datos inválidos",
+                    responseCode = "409",
+                    description = "Horario no disponible o ya reservado",
                     content = @Content(
                             mediaType = "application/json",
                             examples = @ExampleObject(value = """
@@ -73,6 +73,10 @@ public class SchedulingController {
                                     }
                                     """)
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Datos inválidos"
             )
     })
     public ResponseEntity<SessionResponse> book(

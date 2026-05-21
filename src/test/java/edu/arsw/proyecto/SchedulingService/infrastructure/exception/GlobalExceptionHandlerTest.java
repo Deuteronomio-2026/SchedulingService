@@ -48,7 +48,7 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<Object> response = handler.handleSlotNotAvailableException(
                 new SlotNotAvailableException("Horario ya reservado"), webRequest);
 
-        assertErrorResponse(response, HttpStatus.BAD_REQUEST, "Horario ya reservado");
+        assertErrorResponse(response, HttpStatus.CONFLICT, "Horario ya reservado");
         verifyLogged("SlotNotAvailableException", "Horario ya reservado");
     }
 
