@@ -30,6 +30,17 @@ management:
         http.server.requests: true
         booking.latency.ms: true
 
+# ========== AZURE APPLICATION INSIGHTS ==========
+azure:
+  instrumentation:
+    key: ${AZURE_INSTRUMENTATION_KEY:}
+
+# Spring Boot Application Insights
+applicationinsights:
+  instrumentation-key: ${AZURE_INSTRUMENTATION_KEY:}
+  connection-string: ${AZURE_APPINSIGHTS_CONNECTION_STRING:}
+  enabled: true
+
 ---
 # Profile: Development (H2 in-memory)
 spring:
